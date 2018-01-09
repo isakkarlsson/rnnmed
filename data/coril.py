@@ -1,6 +1,5 @@
 def read_visits(code_path, code_len=None, visit_sep="|", code_sep=" "):
-    """
-    Read data from `code_path` optionally truncating the codes to at max `code_len`
+    """Read data from `code_path` optionally truncating the codes to at max `code_len`
 
     Each code is separated by `code_sep` and each visit is separated by a `sep`
 
@@ -30,3 +29,11 @@ def read_visits(code_path, code_len=None, visit_sep="|", code_sep=" "):
             visits.append(out_visit)
         reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
         return list(visits), dictionary, reversed_dictionary
+
+
+def read_translate(f, code_len=None):
+    with open(f) as lines:
+        d = {}
+        for code, translation in map(lambda x: x.strip().split("|"), lines):
+            d[code[:code_len] if code_len is not None else code] = translation
+        return d

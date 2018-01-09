@@ -116,5 +116,5 @@ if __name__ == "__main__":
     ]
 
     x, y = generate_batch(simple_input_output_generator(observations, dictionary, max_skip_ahead=1), batch_size=10)
-    print(np.vstack(x))
-    print(np.vstack(y))
+    print(x)
+    print(y)
