@@ -1,6 +1,7 @@
-import numpy as np
 import itertools
 import random
+
+import numpy as np
 
 
 def _vectorize_visit(visit, dictionary):
@@ -34,9 +35,10 @@ def _vectorize_input_and_output(input_visit, output_visit, dictionary):
         yield x[row, :], y[row, :]
 
 
-def right_consecutive_visit_generator(observations):
+def right_output_visit_generator(observations):
     """
-    Generate visit pairs where the second element of the pair is always after (right) of the first element
+    Generate visit pairs where the second element of the pair is always after
+    (right) of the first element
     :param observations: the observations
     :return: a generator
     """
@@ -48,9 +50,20 @@ def right_consecutive_visit_generator(observations):
                     yield (i, visit_a), (j, visit_b)
 
 
+# TODO: make this work...
+def left_output_visit_generator(observations):
+    for visits in observations:
+        if len(visits) >= 2:
+            for i in range(len(visits) - 1, 0, -1):
+                for j in range(len(visits) - 1, 1, -1):
+                    visit_a, visit_b = visits[i], visits[j]
+                    yield (i, visit_b), (j, visit_a)
+
+
 def visit_generator(observations):
     """
-    Generate visit pairs for all possible combinations of visits per observation
+    Generate visit pairs for all possible combinations of visits per
+    observation
     :param observations: the observations
     :return: a generator
     """
@@ -62,36 +75,54 @@ def visit_generator(observations):
                     yield (i, visit_a), (j, visit_b)
 
 
-def simple_input_output_generator(observations, dictionary, max_skip_ahead=2):
+def simple_input_output_generator(
+        observations, dictionary, max_skip=2, kind="after"):
     """
     Create a simple input output generator.
 
     :param observations: the observations
-    :param dictionary: the dictionary (translating codes to indicies in the resulting one-hot vector)
-    :param max_skip_ahead: maximum number of future visits to use
-    :return: a generator which yields tuples of binary encoded training input and outputs
+    :param dictionary: the dictionary (translating codes to indicies in the
+           resulting one-hot vector)
+    :param max_skip: maximum number of future visits to use
+    :param kind: output is "before" or "after" the input
+    :return: a generator which yields tuples of binary encoded training
+    input and outputs
     """
-    for (i, visit_a), (j, visit_b) in right_consecutive_visit_generator(observations):
-        if abs(j - i) <= max_skip_ahead:
-            for x, y in _vectorize_input_and_output(visit_a, visit_b, dictionary):
+    if kind == "before":
+        gen = left_output_visit_generator(observations)
+    elif kind == "after":
+        gen = right_output_visit_generator(observations)
+    else:
+        raise ValueError("unknown kind")
+
+    for (i, visit_a), (j, visit_b) in gen:
+        if i != j and abs(j - i) <= max_skip:
+            input_and_output = _vectorize_input_and_output(
+                visit_a, visit_b, dictionary)
+            for x, y in input_and_output:
                 yield x, y
 
 
-def random_input_output_generator(observations, dictionary, window_size=2, sample=1):
+def random_input_output_generator(
+        observations, dictionary, window_size=2, sample=1):
     """
-    Create a input output generator where each input is associated with a random output that occurs within at least
+    Create a input output generator where each input is associated with a
+    random output that occurs within at least
     `window_size` visits.
 
     :param observations: the observations
     :param dictionary: the dictionary
     :param window_size: the window size
-    :param sample: the number of outputs to sample from each visit within the window
+    :param sample: the number of outputs to sample from each visit within
+    the window
     :return: a generator
     """
     for (i, visit_a), (j, visit_b) in visit_generator(observations):
         if i != j and abs(j - i) <= window_size:
             sample_b = random.sample(visit_b, min(len(visit_b), sample))
-            for x, y in _vectorize_input_and_output(visit_a, sample_b, dictionary):
+            input_and_output_vectorize = _vectorize_input_and_output(
+                visit_a, sample_b, dictionary)
+            for x, y in input_and_output_vectorize:
                 yield x, y
 
 
@@ -115,6 +146,9 @@ if __name__ == "__main__":
         [["A", "B"], ["C", "A", "B"], ["D"]]
     ]
 
-    x, y = generate_batch(simple_input_output_generator(observations, dictionary, max_skip_ahead=1), batch_size=10)
+    x, y = generate_batch(
+        simple_input_output_generator(
+            observations, dictionary, max_skip=1, kind="after"),
+        batch_size=10)
     print(x)
     print(y)

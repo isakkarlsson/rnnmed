@@ -15,8 +15,11 @@ def chain_dict(*translators):
     :param translators:
     :return:
     """
-    if len(set(map(len, translators))) > 1:
-        raise ValueError("dicts are not of same size")
+    prev_trans = translators[0]
+    for translator in translators[1:]:
+        if len(prev_trans) > len(translator):
+            raise ValueError("illegal sizes")
+        prev_trans = translator
 
     class F:
         def __len__(self):
