@@ -4,13 +4,13 @@ Recurrent Medical Predictions using LSTM
 Roadmap
 -------
 
-1) Get med2vec to work [done]
-2) Implement a recurrent neural network [work started]
-3) Implement a long-term-short-term recurrent network [not started]
-4) Experimental setup
-   1) Extract CORIL data [done]
-   2) MIMIC-III data [started] [demo-working]
-   3) Extract DADEL data [not started]
+1. Get med2vec to work [done]
+2. Implement a recurrent neural network [work started]
+3. Implement a long-term-short-term recurrent network [not started]
+4. Experimental setup
+   1. Extract CORIL data [done]
+   2. MIMIC-III data [started] [demo-working]
+   3. Extract DADEL data [not started]
 
 Author
 ------
