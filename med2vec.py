@@ -5,7 +5,6 @@ import tensorflow as tf
 
 from data.vectorize import generate_batch
 
-
 class Med2Vec:
 
     def __init__(self, code_weight, code_bias, visit_weight, visit_bias):
@@ -17,10 +16,10 @@ class Med2Vec:
     def transform(self, x):
         intermediate_visit = np.maximum(
             np.dot(x, self.code_weight) + self.code_bias, 0)
-        return np.maximum(
-            np.dot(intermediate_visit, self.visit_weight) + self.visit_bias, 0)
+        visit = np.dot(intermediate_visit, self.visit_weight) + self.visit_bias
+        return np.maximum(visit, 0)
 
-
+    
 def med2vec(input_output_generator, code_dim, code_rep_dim=512,
             visit_rep_dim=1024, batch_size=64, max_iter=1000,
             max_iter_progress_report=100, start_learning_rate=0.5,
@@ -31,7 +30,7 @@ def med2vec(input_output_generator, code_dim, code_rep_dim=512,
     with med2vec_graph.as_default():
         x = tf.placeholder(tf.float32, shape=(None, code_dim))
         y = tf.placeholder(tf.float32, shape=(None, code_dim))
-
+        
         code_bias = tf.Variable(tf.zeros([code_rep_dim]),
                                 name="code_bias")
         code_weight = tf.get_variable("code_weight",
