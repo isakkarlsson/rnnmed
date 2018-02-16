@@ -59,8 +59,18 @@ def left_output_visit_generator(observations):
                     visit_a, visit_b = visits[i], visits[j]
                     yield (i, visit_b), (j, visit_a)
 
-
 def visit_generator(observations):
+    """ Returns a generator of visits
+
+    :param observations: the observations
+    :return: a generator of visits
+    """
+    for visits in observations:
+        for visit in visits:
+            yield visit
+
+
+def visit_pair_generator(observations):
     """
     Generate visit pairs for all possible combinations of visits per
     observation
@@ -73,6 +83,21 @@ def visit_generator(observations):
                 for j in range(len(visits)):
                     visit_a, visit_b = visits[i], visits[j]
                     yield (i, visit_a), (j, visit_b)
+
+
+def n_visit_generator(observations, min_visits):
+    """ Yields a list of `n` visits
+
+    :param observations: the observations
+    :param min_visits: the minimum number of visits to yield
+    :return:
+    """
+    pass
+
+
+def linear_input_generator(observations, dictionary):
+    for visit in visit_generator(observations):
+        yield _vectorize_visit(visit, dictionary)
 
 
 def simple_input_output_generator(
@@ -102,7 +127,6 @@ def simple_input_output_generator(
             for x, y in input_and_output:
                 yield x, y
 
-
 def random_input_output_generator(
         observations, dictionary, window_size=2, sample=1):
     """
@@ -117,7 +141,7 @@ def random_input_output_generator(
     the window
     :return: a generator
     """
-    for (i, visit_a), (j, visit_b) in visit_generator(observations):
+    for (i, visit_a), (j, visit_b) in visit_pair_generator(observations):
         if i != j and abs(j - i) <= window_size:
             sample_b = random.sample(visit_b, min(len(visit_b), sample))
             input_and_output_vectorize = _vectorize_input_and_output(
@@ -126,7 +150,7 @@ def random_input_output_generator(
                 yield x, y
 
 
-def generate_batch(input_output_generator, batch_size=64):
+def generate_input_output_batch(input_output_generator, batch_size=64):
     """
     Generate a batch of at most `batch_size`.
 
@@ -140,13 +164,16 @@ def generate_batch(input_output_generator, batch_size=64):
     return np.vstack(x), np.vstack(y)
 
 
+def generate_input_batch(input_generator, batch_size=64):
+    return np.vstack(itertools.islice(input_generator, batch_size))
+
 if __name__ == "__main__":
     dictionary = {"A": 0, "B": 1, "C": 2, "D": 3}
     observations = [
         [["A", "B"], ["C", "A", "B"], ["D"]]
     ]
 
-    x, y = generate_batch(
+    x, y = generate_input_output_batch(
         simple_input_output_generator(
             observations, dictionary, max_skip=1, kind="after"),
         batch_size=10)

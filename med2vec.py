@@ -3,7 +3,13 @@ import itertools
 import numpy as np
 import tensorflow as tf
 
-from data.vectorize import generate_batch
+from data.vectorize import generate_input_output_batch
+
+
+def random_initializer(minval, maxval):
+    def _init(shape, dtype=None, partition_info=None):
+        return tf.random_uniform(shape=shape, minval=minval, maxval=maxval)
+    return _init
 
 
 class Med2Vec:
@@ -35,6 +41,7 @@ def med2vec(input_output_generator, code_dim, code_rep_dim=512,
         code_bias = tf.Variable(tf.zeros([code_rep_dim]),
                                 name="code_bias")
         code_weight = tf.get_variable("code_weight",
+                                      #initializer=random_initializer(0.1, 1),
                                       shape=(code_dim, code_rep_dim),
                                       regularizer=l2_regularizer)
 
@@ -42,6 +49,7 @@ def med2vec(input_output_generator, code_dim, code_rep_dim=512,
 
         visit_bias = tf.Variable(tf.zeros([visit_rep_dim]))
         visit_weight = tf.get_variable("visit_weight",
+                                       #initializer=random_initializer(0.1, 1),
                                        shape=(code_rep_dim, visit_rep_dim),
                                        regularizer=l2_regularizer)
 
@@ -50,15 +58,15 @@ def med2vec(input_output_generator, code_dim, code_rep_dim=512,
 
         # dense layer representing the softmax classifier
         # we use tf.identity instead of `tf.nn.softmax`
-        # so we use the numerically stable
+        # so we can use the numerically stable
         # `tf.nn.softmax_cross_entropy_with_logits`
+        # TODO: tf.identity if is_training else tf.softmax
         y_hat = tf.layers.dense(visit_rep, code_dim,
                                 kernel_regularizer=tf.nn.l2_loss,
                                 activation=tf.identity)
 
         loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(
-                logits=y_hat, labels=y))
+            tf.nn.softmax_cross_entropy_with_logits(logits=y_hat, labels=y))
 
         reg_variables = tf.get_collection(
             tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -82,16 +90,15 @@ def med2vec(input_output_generator, code_dim, code_rep_dim=512,
 
         vec_cycle = itertools.cycle(input_output_generator)
         for i in range(max_iter):
-            x_data, y_data = generate_batch(vec_cycle,
-                                            batch_size=batch_size)
-            _, loss_value, y_hat_val, y_val = session.run(
-                [optimizer, loss, y_hat, y],
-                feed_dict={x: x_data, y: y_data})
+            x_data, y_data = generate_input_output_batch(
+                vec_cycle, batch_size=batch_size)
+            feed_dict = {x: x_data, y: y_data}
+            _, loss_value, y_hat_val, y_val = \
+                session.run([optimizer, loss, y_hat, y], feed_dict=feed_dict)
 
             tmp_loss.append(loss_value)
             if i % max_iter_progress_report == 0:
-                print(max_iter_progress_report, " iterations",
-                      np.mean(tmp_loss))
+                print("epoch:", i, "avg_loss:", np.mean(tmp_loss))
                 loss_values.append(np.mean(tmp_loss))
                 tmp_loss = []
 
@@ -103,25 +110,27 @@ if __name__ == "__main__":
     import data.io
     import data.vectorize as vectorize
 
-    m = 1024  # code weight matrix dimension
-    n = 2048  # visit weight matrix dimension
+    m = 128  # code weight matrix dimension
+    n = 256  # visit weight matrix dimension
     code_len = 2
+
 
     def transform(code):
         return code[:code_len]
 
+
     # uncomment to disable
     transform = None
 
-    max_iter = 500
+    max_iter = 10000
     max_iter_progress_report = 100
 
     batch_size = 128
 
     observations, dictionary, reverse_dictionary = data.io.read_visits(
         "test_data/mimic_demo.seq")
-    # observations, dictionary, reverse_dictionary = data.io.read_visits(
-    #    "/mnt/veracrypt1/val/slv_events.seq", transform=transform)
+    observations, dictionary, reverse_dictionary = data.io.read_visits(
+        "/mnt/veracrypt1/val/slv_events.seq", transform=transform)
     code_dim = len(dictionary)
     print("Data contains {} observations with {} different codes".format(
         len(observations), code_dim))
@@ -133,4 +142,4 @@ if __name__ == "__main__":
                   max_iter=max_iter,
                   code_rep_dim=m,
                   visit_rep_dim=n,
-                  l2_reg=0.0)
+                  l2_reg=0.0 )
