@@ -16,10 +16,13 @@ def read_visits(code_path, transform=None, valid_code=None, visit_sep="|",
     Each code is separated by `code_sep` and each visit is separated by a `sep`
 
     :param code_path: the file path to read from
-    :param code_len: the maximum length of code
+    :param transform: 
+    :param valid_code: 
     :param visit_sep: the visit separator
     :param code_sep: the code separator
-    :return: a tuple with 4 arguments: (data, dictionary, reverse_dictionary, code_size)
+
+    :return: a tuple (data, dictionary, reverse_dictionary)
+
     """
     valid_code = valid_code or __always_in__
     with open(code_path) as code_file:
@@ -49,3 +52,14 @@ def read_visits(code_path, transform=None, valid_code=None, visit_sep="|",
 
         reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
         return list(visits), dictionary, reversed_dictionary
+
+
+def read_dadel_visits(self, f):
+    """Read a dataset consisting of DADEL visits.
+
+    :param f: the reader
+    :returns: a tuple with (data, dictionary, reverse_dictionary)
+    :rtype: tuple
+    """
+    
+    pass

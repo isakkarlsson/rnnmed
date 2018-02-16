@@ -3,10 +3,12 @@ import csv
 
 
 def read_translator(f):
-    """ Read a dictionary of code to explanation from the MIMIC-III ICD_DIAGNOSIS-file
+    """Read a dictionary of code to explanation from the MIMIC-III
+    ICD_DIAGNOSIS-file
 
     :param f: the file (closed aftar call)
     :return: a dict, code => description
+
     """
     with f as lines:
         d = {}
