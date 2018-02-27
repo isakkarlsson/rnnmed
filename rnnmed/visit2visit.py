@@ -26,7 +26,7 @@ def visit2visit(generator,
     if transform is None:
         transform = IdentityTransform()
 
-    x_test, y_test = rnnmed.data.generate_time_batch(generator, batch_size=32)
+    x_test, y_test = rnnmed.data.generate_time_batch(generator, batch_size=4)
 
     # use the rest for traning now ...
     generator = itertools.cycle(generator)
@@ -77,10 +77,10 @@ def visit2visit(generator,
 
         print(np.round(prob, 4))
         pred = np.argmax(prob, axis=1)
-        print(np.sum(pred == y_test.reshape(-1)/y_test.shape[0]))
+        print(np.sum(pred.reshape(-1) == y_test.reshape(-1))/y_test.shape[0])
 
-        print(pred)
-        print(y_test)
+        print(pred.reshape(-1))
+        print(y_test.reshape(-1))
         print(loss)
 
 

@@ -3,6 +3,100 @@ import itertools
 import numpy as np
 
 
+class IndexLookup:
+    def __init__(self):
+        self.__dictionary = {}
+        self.__reverse_dictionary = {}
+
+    def transform(self, codes):
+        return np.array([self.safe_to_index(c) for c in codes])
+
+    def reverse_transform(self, indices):
+        return [self.safe_to_code(i) for i in indices]
+
+    @property
+    def to_index(self):
+        """Return a dictionary of `index => code`
+
+        :returns: a dictionary
+        :rtype: dict
+
+        """
+        return self.__dictionary
+
+    def safe_to_index(self, code):
+        return self.to_index[code]
+
+    @property
+    def to_code(self):
+        """Return a dictionary of `code => index`
+
+        :returns: a dictionary
+        :rtype: dict
+
+        """
+        return self.__reverse_dictionary
+
+    def safe_to_code(self, index):
+        return self.to_code[index]
+
+    def update(self, code):
+        """Update the index with the `code`
+
+        :param code: the code to add to the index
+        :returns: the index of the code
+        :rtype: int
+
+        """
+        index = self.to_index.get(code)
+        if index is None:
+            index = len(self)
+            self.__dictionary[code] = index
+            self.__reverse_dictionary[index] = code
+        return index
+
+    def __len__(self):
+        """Return the length of the index
+
+        :returns: the length
+        :rtype: int
+
+        """
+        return len(self.__dictionary)
+
+
+def one_hot(example, n_features):
+    """One-hot encode a set of values, which are the index of the columns
+    with non-zero values.
+
+    :param visit: the input
+    :param n_features: the number of features
+    :returns: array of shape [1, n_features]
+    :rtype: np.array
+
+    """
+    x = np.zeros(shape=(1, n_features))
+    for where in example:
+        x[0, where] = 1
+    return x
+
+
+def one_hot_output(example, n_features):
+    """One-hot encodes each index as a separate vector, i.e., with a
+    single non-zero value.
+
+    :param visit:  the example
+    :param n_features: the number of features
+    :returns: array of shape ``[len(example), n_features]``
+    :rtype: np.array
+
+    """
+    x = np.zeros(shape=(len(example), n_features))
+    for row, col in enumerate(example):
+        x[row, col] = 1
+    return x
+
+
 def generate_input_output_batch(input_output_generator,
                                 batch_size=64,
                                 x_concat=np.vstack,
@@ -20,17 +114,18 @@ def generate_input_output_batch(input_output_generator,
     return x_concat(x), y_concat(y)
 
 
-def generate_input_batch(input_generator, batch_size=64):
+def generate_input_batch(input_generator, batch_size=64, concat=np.vstack):
     """Generate a batch of at most `batch_size` of a genrator generating a
     single array
 
-    :param input_generator: 
-    :param batch_size: 
-    :returns: 
-    :rtype:
+    :param input_generator: a generator of numpy arrays
+    :param batch_size: the batch size
+    :param concat: concat the examples to ``batch_size`` (default: np.vstack)
+    :yields: arrays of size ``[batch_size, None]``
+    :rtype: generator
 
     """
-    return np.vstack(itertools.islice(input_generator, batch_size))
+    return concat(itertools.islice(input_generator, batch_size))
 
 
 def generate_time_batch(generator, batch_size=64):

@@ -3,12 +3,12 @@ import unittest
 import rnnmed.data
 import rnnmed.data.io
 import rnnmed.data.timeseries as ts
-import rnnmed.data.vectorize as vectorize
+import rnnmed.data.observations as observations
 
 
 class TestData(unittest.TestCase):
     def test_observations(self):
-        observations = rnnmed.data.io.Observations()
+        observations = rnnmed.data.observations.Observations()
         data = [[["A"], ["B"]], [["C"], ["D"]]]
 
         for item in data:
@@ -26,15 +26,15 @@ class TestData(unittest.TestCase):
 
     def test_time_series(self):
         import numpy as np
-        observations = rnnmed.data.io.Observations()
+        ob = rnnmed.data.observations.Observations()
         data = [[["A"], ["B"]], [["C"], ["D"]]]
 
         for item in data:
-            observations.add(item, 1)
+            ob.add(item, 1)
 
-        o_gen = vectorize.time_observation_generator(observations, n_visits=2)
-        a_gen = vectorize.time_observation_generator(observations, n_visits=2)
-        b_gen = vectorize.time_observation_generator(observations, n_visits=2)
+        o_gen = observations.time_observation_generator(ob, n_visits=2)
+        a_gen = observations.time_observation_generator(ob, n_visits=2)
+        b_gen = observations.time_observation_generator(ob, n_visits=2)
         timeseries = rnnmed.data.io.read_time_series(
             open("test_data/synthetic_control.txt"))
 
