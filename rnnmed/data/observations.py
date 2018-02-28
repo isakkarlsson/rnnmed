@@ -157,8 +157,8 @@ def one_hot_input_and_output(input_visit, output_visit, n_features):
     :return: a generator
 
     """
-    x = data.one_hot(input_visit, n_features)
-    y = data.one_hot_output(output_visit, n_features)
+    x = data.vectorize(input_visit, n_features)
+    y = data.vectorize2d(output_visit, n_features)
     return np.repeat(x, y.shape[0], axis=0), y
 
 
@@ -215,7 +215,7 @@ def visit_pair_generator(observations):
 
 def linear_input_generator(observations, n_features):
     for visit in visit_generator(observations):
-        yield data.one_hot(visit, n_features)
+        yield data.vectorize(visit, n_features)
 
 
 def simple_input_output_generator(observations, max_skip=2, kind="after"):
@@ -279,7 +279,7 @@ def one_hot_observation(observation, n_features, n_visits):
     arr = np.zeros([n_visits, 1, n_features])
     for i in range(min(n_visits, len(observation))):
         visit = observation[-(i + 1)]
-        arr[-(i + 1), 0, :] = data.one_hot(visit, n_features)
+        arr[-(i + 1), 0, :] = data.vectorize(visit, n_features)
     return arr
 
 

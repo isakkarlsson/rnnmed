@@ -65,7 +65,7 @@ class IndexLookup:
         return len(self.__dictionary)
 
 
-def one_hot(example, n_features):
+def vectorize(example, n_features):
     """One-hot encode a set of values, which are the index of the columns
     with non-zero values.
 
@@ -81,7 +81,7 @@ def one_hot(example, n_features):
     return x
 
 
-def one_hot_output(example, n_features):
+def vectorize2d(example, n_features):
     """One-hot encodes each index as a separate vector, i.e., with a
     single non-zero value.
 
