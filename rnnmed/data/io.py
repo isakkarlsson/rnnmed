@@ -1,5 +1,5 @@
-from .observations import Observations
-from .timeseries import Timeseries
+from rnnmed.data.observations import Observations
+from rnnmed.data.timeseries import Timeseries
 
 
 class AlwaysIn:
@@ -22,7 +22,7 @@ def __parse_observation(pat, transform, valid_code, code_sep):
             if valid_code is not None and code in valid_code:
                 out.append(code)
 
-        if out:
+        if out:  # perhaps we should remove this check...
             observation.append(out)
     return observation
 

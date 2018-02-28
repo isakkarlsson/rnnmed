@@ -18,11 +18,8 @@ class TestData(unittest.TestCase):
         self.assertEqual(observations.n_features, 4)
         self.assertEqual(observations.n_labels, 0)
         self.assertEqual(observations.original_data, data)
-        self.assertEqual(observations.data, [[[0], [1]], [[2], [3]]])
-        import numpy as np
-        a = np.argmax([[0, 1, 0], [1, 0, 0]], axis=1)
-        print(a)
-        print(observations.data_index.reverse_transform(a))
+        self.assertEqual(observations.data,
+                         [[[(0, 1)], [(1, 1)]], [[(2, 1)], [(3, 1)]]])
 
     def test_time_series(self):
         import numpy as np
@@ -42,7 +39,7 @@ class TestData(unittest.TestCase):
             print(x)
         c_gen = rnnmed.data.concatenate_generator(
             [a_gen, b_gen], concat=lambda x: np.concatenate(x, axis=2))
-        
+
         for x, y in c_gen:
             print(x)
             print(y)

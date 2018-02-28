@@ -76,8 +76,8 @@ def one_hot(example, n_features):
 
     """
     x = np.zeros(shape=(1, n_features))
-    for where in example:
-        x[0, where] = 1
+    for where, value in example:
+        x[0, where] = value
     return x
 
 
@@ -92,8 +92,8 @@ def one_hot_output(example, n_features):
 
     """
     x = np.zeros(shape=(len(example), n_features))
-    for row, col in enumerate(example):
-        x[row, col] = 1
+    for row, (where, value) in enumerate(example):
+        x[row, where] = value
     return x
 
 

@@ -1,16 +1,15 @@
-import itertools
 import random
 import numpy as np
 
-from .utils import IndexLookup, one_hot, one_hot_output
+import rnnmed.data as data
 
 
 class Observations:
     def __init__(self):
         self.__data = []
         self.__labels = []
-        self.__data_index = IndexLookup()
-        self.__label_index = IndexLookup()
+        self.__data_index = data.IndexLookup()
+        self.__label_index = data.IndexLookup()
 
     @property
     def data_index(self):
@@ -77,8 +76,8 @@ class Observations:
         for obj in self.data:
             observation = []
             for items in obj:
-                observation.append(
-                    list(map(self.data_index.to_code.get, items)))
+                new_obj = [self.data_index.to_code.get(i) for i, _ in items]
+                observation.append(new_obj)
             observations.append(observation)
         return observations
 
@@ -113,7 +112,8 @@ class Observations:
 
         new_observation = []
         for visit in observation:
-            new_observation.append(list(map(self.data_index.update, visit)))
+            new_visit = [(self.data_index.update(v), 1) for v in visit]
+            new_observation.append(new_visit)
         self.__data.append(new_observation)
 
     def __len__(self):
@@ -157,8 +157,8 @@ def one_hot_input_and_output(input_visit, output_visit, n_features):
     :return: a generator
 
     """
-    x = one_hot(input_visit, n_features)
-    y = one_hot_output(output_visit, n_features)
+    x = data.one_hot(input_visit, n_features)
+    y = data.one_hot_output(output_visit, n_features)
     return np.repeat(x, y.shape[0], axis=0), y
 
 
@@ -215,7 +215,7 @@ def visit_pair_generator(observations):
 
 def linear_input_generator(observations, n_features):
     for visit in visit_generator(observations):
-        yield one_hot(visit, n_features)
+        yield data.one_hot(visit, n_features)
 
 
 def simple_input_output_generator(observations, max_skip=2, kind="after"):
@@ -241,8 +241,8 @@ def simple_input_output_generator(observations, max_skip=2, kind="after"):
 
     for (i, visit_a), (j, visit_b) in gen:
         if i != j and abs(j - i) <= max_skip:
-            yield one_hot_input_and_output(visit_a, visit_b,
-                                           observations.n_features)
+            yield data.one_hot_input_and_output(visit_a, visit_b,
+                                                observations.n_features)
 
 
 def random_input_output_generator(observations, window_size=2, sample=1):
@@ -262,8 +262,8 @@ def random_input_output_generator(observations, window_size=2, sample=1):
     for (i, visit_a), (j, visit_b) in visit_pair_generator(observations):
         if i != j and abs(j - i) <= window_size:
             sample_b = random.sample(visit_b, min(len(visit_b), sample))
-            x, y = one_hot_input_and_output(visit_a, sample_b,
-                                            observations.n_features)
+            x, y = data.one_hot_input_and_output(visit_a, sample_b,
+                                                 observations.n_features)
             yield x, y
 
 
@@ -279,7 +279,7 @@ def one_hot_observation(observation, n_features, n_visits):
     arr = np.zeros([n_visits, 1, n_features])
     for i in range(min(n_visits, len(observation))):
         visit = observation[-(i + 1)]
-        arr[-(i + 1), 0, :] = one_hot(visit, n_features)
+        arr[-(i + 1), 0, :] = data.one_hot(visit, n_features)
     return arr
 
 
