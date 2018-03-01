@@ -35,17 +35,46 @@ class TestData(unittest.TestCase):
         timeseries = rnnmed.data.io.read_time_series(
             open("test_data/synthetic_control.txt"))
 
-        for x, y in o_gen:
-            print(x)
         c_gen = rnnmed.data.concatenate_generator(
             [a_gen, b_gen], concat=lambda x: np.concatenate(x, axis=2))
 
         for x, y in c_gen:
             print(x)
             print(y)
-        raise "ds"
+
         print(timeseries[0])
         generator = ts.timeseries_generator(timeseries)
         x_a, y_a = rnnmed.data.generate_time_batch(generator, batch_size=2)
         x_b, _ = rnnmed.data.generate_time_batch(o_gen, batch_size=2)
-        print(np.concatenate([x_a, x_b], axis=2))
+        print(x_a)
+
+    def test_time_series_observation(self):
+        def week_agg(date):
+            return date.year, date.isocalendar()[1]
+
+        ob = rnnmed.data.io.read_time_series_observation(
+            open("/mnt/veracrypt1/EHR_DATA/L270-90-raw-measurements.csv"),
+            min_sparsity=0.05)
+
+        import random
+        random.seed(10)
+        random.shuffle(ob)
+        n_visits = 6
+        generator = observations.time_observation_generator(
+            ob, n_visits=n_visits)
+
+        print(len(ob), ob.n_features)
+        avg_len = 0
+        for o in ob:
+            avg_len += len(o)
+        print(avg_len/float(len(ob)))
+
+        from rnnmed.visit2visit import visit2visit
+
+        visit2visit(
+            generator,
+            n_features=ob.n_features,
+            n_labels=ob.n_labels,
+            n_timesteps=n_visits,
+            n_hidden=512,
+            max_iter=2000)

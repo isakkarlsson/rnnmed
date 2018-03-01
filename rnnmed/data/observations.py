@@ -4,6 +4,20 @@ import numpy as np
 import rnnmed.data as data
 
 
+def _maybe_add_value(values):
+    """Maybe changes a single value of the collections contents to a tuple
+
+    :param values: a list of tuples or values
+    :rtype: generator
+
+    """
+    for value in values:
+        if isinstance(value, tuple):
+            yield value
+        else:
+            yield value, 1
+
+
 class Observations:
     def __init__(self):
         self.__data = []
@@ -76,7 +90,7 @@ class Observations:
         for obj in self.data:
             observation = []
             for items in obj:
-                new_obj = [self.data_index.to_code.get(i) for i, _ in items]
+                new_obj = [(self.data_index.to_code.get(i), v) for i, v in items]
                 observation.append(new_obj)
             observations.append(observation)
         return observations
@@ -112,7 +126,8 @@ class Observations:
 
         new_observation = []
         for visit in observation:
-            new_visit = [(self.data_index.update(v), 1) for v in visit]
+            new_visit = [(self.data_index.update(i), v)
+                         for i, v in _maybe_add_value(visit)]
             new_observation.append(new_visit)
         self.__data.append(new_observation)
 
@@ -145,7 +160,18 @@ class Observations:
             obs.__data_index = self.__data_index
             return obs
         else:
-            return self.data[key]
+            if self.n_labels == 0:
+                return self.data[key]
+            else:
+                return self.data[key], self.labels[key]
+
+    def __setitem__(self, key, value):
+        if isinstance(value, tuple):
+            data, label = value
+            self.data[key] = data
+            self.labels[key] = label
+        else:
+            self.data[key] = value
 
 
 def one_hot_input_and_output(input_visit, output_visit, n_features):
@@ -295,17 +321,3 @@ def time_observation_generator(observations, n_visits=2):
     for observation, y in zip(observations.data, observations.labels):
         x = one_hot_observation(observation, observations.n_features, n_visits)
         yield x, y
-
-
-# if __name__ == "__main__":
-#     import data.io
-#     observations = data.io.read_labeled_visits("test_data/label_synthetic.seq")
-#     generator = time_observation_generator(observations, n_visits=4)
-#     x, y = generate_time_batch(generator, batch_size=4)
-#     print(x)
-#     print(y)
-
-#     x, y = generate_input_output_batch(
-#         simple_input_output_generator(observations, max_skip=1, kind="both"))
-#     for i in range(x.shape[0]):
-#         print(x[i, :], y[i, :])

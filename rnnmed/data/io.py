@@ -1,3 +1,8 @@
+from datetime import datetime
+from collections import defaultdict, OrderedDict
+
+import numpy as np
+
 from rnnmed.data.observations import Observations
 from rnnmed.data.timeseries import Timeseries
 
@@ -13,7 +18,7 @@ class AlwaysIn:
 __always_in__ = AlwaysIn()
 
 
-def __parse_observation(pat, transform, valid_code, code_sep):
+def _parse_observation(pat, transform, valid_code, code_sep):
     observation = []
     for visit in (vis.strip().split(code_sep) for vis in pat):
         out = []  # set()
@@ -52,8 +57,8 @@ def read_observations(code_path,
         pats = (line.strip().split(visit_sep) for line in lines)
         observations = Observations()
         for pat in pats:
-            observation = __parse_observation(pat, transform, valid_code,
-                                              code_sep)
+            observation = _parse_observation(pat, transform, valid_code,
+                                             code_sep)
             if observation:
                 observations.add(observation)
 
@@ -72,10 +77,81 @@ def read_labeled_observations(code_path,
         observations = Observations()
         for line in lines:
             label, data = line.strip().split(label_sep)
-            observation = __parse_observation(data.strip().split(visit_sep),
-                                              None, __always_in__, code_sep)
+            observation = _parse_observation(data.strip().split(visit_sep),
+                                             None, __always_in__, code_sep)
             if observation:
                 observations.add(observation, label)
+        return observations
+
+
+def _day_aggregate(date):
+    return (date.year, date.month, date.day)
+
+
+class _Example:
+    def __init__(self):
+        self.data = {}
+
+    def add(self, date, code, value):
+        coll = self.data.get(date)
+        if not coll:
+            coll = defaultdict(list)
+            self.data[date] = coll
+        coll[code].append(value)
+
+
+def read_time_series_observation(f,
+                                 sep=",",
+                                 agg=_day_aggregate,
+                                 min_sparsity=0):
+    def std_norm(v, mean, std):
+        if std == 0:
+            return 1
+        else:
+            v = np.array(v)
+            return (v - mean) / std
+
+    with f as t_f:
+        next(t_f)  # skip header
+
+        observations = Observations()
+        examples = defaultdict(_Example)
+        values = defaultdict(lambda: defaultdict(list))
+        code_pid = defaultdict(set)
+        pid_count = set()
+
+        for line in t_f:
+            pid, date_str, code, value, label = line.strip().split(sep)
+            date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+            date_key = agg(date)
+            examples[pid].add(date_key, code, float(value))
+            examples[pid].label = label
+            values[pid][code].append(float(value))
+            code_pid[code].add(pid)
+            pid_count.add(pid)
+
+        stats = defaultdict(dict)
+        for pid, codes in values.items():
+            for code, value in codes.items():
+                stats[pid][code] = (np.mean(value), np.std(value))
+
+        n_examples = float(len(pid_count))
+        sparsity = {}
+        for code, pids in code_pid.items():
+            sparsity[code] = len(pids) / n_examples
+
+        for pid, example in examples.items():
+            observation = []
+            for date, values in example.data.items():
+                visit = []
+                for code, value in values.items():
+                    if sparsity[code] > min_sparsity:
+                        # v_sum = np.mean(std_norm(value, *stats[pid][code]))
+                        visit.append((code, np.mean(value)))
+                if visit:
+                    observation.append(visit)
+            if observation:
+                observations.add(observation, example.label)
         return observations
 
 
