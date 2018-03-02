@@ -116,7 +116,7 @@ def read_time_series_observation(f,
 
         observations = Observations()
         examples = defaultdict(_Example)
-        values = defaultdict(lambda: defaultdict(list))
+        values = defaultdict(list)
         code_pid = defaultdict(set)
         pid_count = set()
 
@@ -126,15 +126,14 @@ def read_time_series_observation(f,
             date_key = agg(date)
             examples[pid].add(date_key, code, float(value))
             examples[pid].label = label
-            values[pid][code].append(float(value))
+            values[code].append(float(value))
             code_pid[code].add(pid)
             pid_count.add(pid)
 
-        stats = defaultdict(dict)
-        for pid, codes in values.items():
-            for code, value in codes.items():
-                stats[pid][code] = (np.mean(value), np.std(value))
-
+        stats = {}
+        for code, value in values.items():
+            stats[code] = (np.mean(value), np.std(value))
+        
         n_examples = float(len(pid_count))
         sparsity = {}
         for code, pids in code_pid.items():
@@ -146,8 +145,8 @@ def read_time_series_observation(f,
                 visit = []
                 for code, value in values.items():
                     if sparsity[code] > min_sparsity:
-                        # v_sum = np.mean(std_norm(value, *stats[pid][code]))
-                        visit.append((code, np.mean(value)))
+                        v_sum = np.mean(std_norm(value, *stats[code]))
+                        visit.append((code, v_sum))
                 if visit:
                     observation.append(visit)
             if observation:
