@@ -82,4 +82,4 @@ class TestMed2Vec(unittest.TestCase):
             n_timesteps=timeseries.n_timesteps,
             n_labels=timeseries.n_labels,
             n_hidden=128,
-            max_iter=1000)
+            max_iter=10000)

@@ -52,23 +52,21 @@ class TestData(unittest.TestCase):
         def week_agg(date):
             return date.year, date.isocalendar()[1]
 
+        def month_agg(date):
+            return date.year, date.month
+
         ob = rnnmed.data.io.read_time_series_observation(
             open("/mnt/veracrypt1/EHR_DATA/L270-90-raw-measurements.csv"),
-            min_sparsity=0.05)
+            min_sparsity=0.1)
 
         import random
         random.seed(10)
         random.shuffle(ob)
-        n_visits = 6
+        n_visits = 10
         generator = observations.time_observation_generator(
             ob, n_visits=n_visits)
 
         print(len(ob), ob.n_features)
-        avg_len = 0
-        for o in ob:
-            avg_len += len(o)
-        print(avg_len/float(len(ob)))
-
         from rnnmed.visit2visit import visit2visit
 
         visit2visit(
@@ -76,5 +74,5 @@ class TestData(unittest.TestCase):
             n_features=ob.n_features,
             n_labels=ob.n_labels,
             n_timesteps=n_visits,
-            n_hidden=512,
-            max_iter=2000)
+            n_hidden=128,
+            max_iter=1000)

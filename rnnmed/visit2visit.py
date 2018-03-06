@@ -17,6 +17,18 @@ class IdentityTransform:
         return self.transform(*args)
 
 
+def auc(a, p):
+    return metrics.roc_(a.reshape(-1), p.reshape(-1))
+
+
+def compute_stats(y_train, y_in_pred, y_test, y_out_pred):
+    pass
+
+
+
+
+
+
 def visit2visit(generator,
                 n_features,
                 n_labels,
@@ -37,24 +49,43 @@ def visit2visit(generator,
     with graph.as_default():
         X = tf.placeholder(tf.float32, shape=[n_timesteps, None, n_features])
         y = tf.placeholder(tf.int32, shape=[None])
+        keep_proba = tf.placeholder_with_default(1.0, shape=())
+        
+        layer = tf.layers.dense(tf.reshape(X, [-1, n_features]), 128)
+        layer = tf.reshape(layer, [n_timesteps, -1, 128])
 
         lstm_cell = tf.nn.rnn_cell.LSTMCell(
-            n_hidden, use_peepholes=True, forget_bias=1.0, activation=tf.nn.sigmoid)
+            n_hidden,
+            use_peepholes=True,
+            forget_bias=1.0,
+            activation=tf.nn.sigmoid)
         lstm_cell_1 = tf.nn.rnn_cell.LSTMCell(
-            n_hidden, use_peepholes=True, forget_bias=1.0, activation=tf.nn.sigmoid)
+            n_hidden,
+            use_peepholes=True,
+            forget_bias=1.0,
+            activation=tf.nn.sigmoid)
 
-        cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell, lstm_cell_1])
+        lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
+            lstm_cell, output_keep_prob=keep_proba)
+        #cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * 3)
         outputs, states = tf.nn.dynamic_rnn(
-            cell, X, time_major=True, dtype=tf.float32)
+            lstm_cell, layer, time_major=True, dtype=tf.float32)
 
         last_output = outputs[-1]
         pred_y = tf.layers.dense(last_output, n_labels, use_bias=True)
 
         prob_y = tf.nn.softmax(pred_y)
+
+        #print(len(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)))
+        l2_vars = [tf.nn.l2_loss(var) for var in tf.trainable_variables()
+                   if not "noreg" in var.name or "Bias" in var.name]
+        print(l2_vars)
+        l2 = sum(l2_vars)
+
         cost = tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=y, logits=pred_y))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(cost)
+                labels=y, logits=pred_y)) + 0 * l2
+        optimizer = tf.train.AdamOptimizer(learning_rate=0.0025).minimize(cost)
         init = tf.global_variables_initializer()
 
     with tf.Session(graph=graph) as sess:
@@ -62,12 +93,13 @@ def visit2visit(generator,
 
         for e in range(max_iter):
             x_batch, y_batch = rnnmed.data.generate_time_batch(
-                generator, batch_size=64)
+                generator, batch_size=128)
             _, loss = sess.run(
                 [optimizer, cost],
                 feed_dict={
                     X: transform(x_batch),
-                    y: y_batch.reshape(-1)
+                    y: y_batch.reshape(-1),
+                    keep_proba: 0.5
                 })
             if e % 250 == 0:
                 print("epoch: {}. loss: {}".format(e, loss))
@@ -86,7 +118,7 @@ def visit2visit(generator,
         a, b = y_test.reshape(-1), prob[:, 1].reshape(-1)
         print(a)
         print(b)
-        print(metrics.roc_auc_score(a, b))
+        print("AUC:", metrics.roc_auc_score(a, b))
 
         print(pred.reshape(-1))
         print(y_test.reshape(-1))

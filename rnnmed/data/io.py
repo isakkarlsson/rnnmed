@@ -104,12 +104,13 @@ def read_time_series_observation(f,
                                  sep=",",
                                  agg=_day_aggregate,
                                  min_sparsity=0):
-    def std_norm(v, mean, std):
-        if std == 0:
-            return 1
-        else:
-            v = np.array(v)
-            return (v - mean) / std
+    def std_norm(v, min, max):
+        return (v - min)/(max-min)
+        # if std == 0:
+        #     return 1
+        # else:
+        #     v = np.array(v)
+        #     return (v - mean) / std
 
     with f as t_f:
         next(t_f)  # skip header
@@ -132,7 +133,7 @@ def read_time_series_observation(f,
 
         stats = {}
         for code, value in values.items():
-            stats[code] = (np.mean(value), np.std(value))
+            stats[code] = (np.min(value), np.max(value))
         
         n_examples = float(len(pid_count))
         sparsity = {}
