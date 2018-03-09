@@ -32,17 +32,17 @@ def _parse_observation(pat, transform, valid_code, code_sep):
     return observation
 
 
-def read_observations(code_path,
+def read_observations(f,
                       transform=None,
                       valid_code=None,
                       visit_sep="|",
                       code_sep=" "):
-    """Read data from `code_path` optionally truncating the codes to at
+    """Read data from `f` optionally truncating the codes to at
     max `code_len`
 
     Each code is separated by `code_sep` and each visit is separated by a `sep`
 
-    :param code_path: the file path to read from
+    :param f: the file path to read from
     :param transform: the transformation function
     :param valid_code: code validator
     :param visit_sep: the visit separator
@@ -52,7 +52,7 @@ def read_observations(code_path,
 
     """
     valid_code = valid_code or __always_in__
-    with open(code_path) as code_file:
+    with f as code_file:
         lines = code_file.readlines()
         pats = (line.strip().split(visit_sep) for line in lines)
         observations = Observations()
@@ -68,11 +68,11 @@ def read_observations(code_path,
         return observations
 
 
-def read_labeled_observations(code_path,
+def read_labeled_observations(f,
                               visit_sep="|",
                               code_sep=" ",
                               label_sep=","):
-    with open(code_path) as code_file:
+    with f as code_file:
         lines = code_file.readlines()
         observations = Observations()
         for line in lines:
@@ -105,7 +105,11 @@ def read_time_series_observation(f,
                                  agg=_day_aggregate,
                                  min_sparsity=0):
     def std_norm(v, min, max):
-        return (v - min)/(max-min)
+        min_max = max - min
+        if min_max == 0:
+            return 0
+
+        return (v - min)/min_max
         # if std == 0:
         #     return 1
         # else:

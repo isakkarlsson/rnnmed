@@ -85,7 +85,8 @@ def vectorize2d(example, n_features):
     """One-hot encodes each index as a separate vector, i.e., with a
     single non-zero value.
 
-    :param visit:  the example
+    :param
+    visit:  the example
     :param n_features: the number of features
     :returns: array of shape ``[len(example), n_features]``
     :rtype: np.array
@@ -97,10 +98,10 @@ def vectorize2d(example, n_features):
     return x
 
 
-def generate_input_output_batch(input_output_generator,
-                                batch_size=64,
-                                x_concat=np.vstack,
-                                y_concat=np.vstack):
+def input_output_batch(input_output_generator,
+                       batch_size=64,
+                       x_concat=np.vstack,
+                       y_concat=np.vstack):
     """Generate a batch of at most `batch_size`.
 
     Expects the input to be a generator which outputs input output pairs.
@@ -110,11 +111,14 @@ def generate_input_output_batch(input_output_generator,
     :return: (training input, training output)
 
     """
-    x, y = zip(*itertools.islice(input_output_generator, batch_size))
-    return x_concat(x), y_concat(y)
+    a = list(itertools.islice(input_output_generator, batch_size))
+    if a:
+        x, y = zip(*a)
+        return x_concat(x), y_concat(y)
+    return None
 
 
-def generate_input_batch(input_generator, batch_size=64, concat=np.vstack):
+def input_batch(input_generator, batch_size=64, concat=np.vstack):
     """Generate a batch of at most `batch_size` of a genrator generating a
     single array
 
@@ -125,10 +129,13 @@ def generate_input_batch(input_generator, batch_size=64, concat=np.vstack):
     :rtype: generator
 
     """
-    return concat(itertools.islice(input_generator, batch_size))
+    a = list(itertools.islice(input_generator, batch_size))
+    if a:
+        return concat(a)
+    return None
 
 
-def generate_time_batch(generator, batch_size=64):
+def time_batch(generator, batch_size=64):
     """Generate a batch of `batch_size` input output pairs
 
     This method is a convenient way of calling:
@@ -141,10 +148,26 @@ def generate_time_batch(generator, batch_size=64):
     :param batch_size: the batch_size
     :returns: a [n_step, batch_size, n_features] numpy array
     """
-    return generate_input_output_batch(
+    return input_output_batch(
         generator,
         batch_size=batch_size,
         x_concat=lambda x: np.concatenate(x, axis=1))
+
+
+def collect_batch(generator, batcher=input_output_batch, batch_size=64):
+    """ Collect a list of complete batches of at most `batch_size`
+
+    :param generator: the generator to collect
+    :param batcher: the function creating batches (return None when no more batches can be created)
+    :param batch_size: the size of the batches
+    :yields: the next batch
+
+    """
+    while True:
+        data = batcher(generator, batch_size)
+        if not data:
+            break
+        yield data
 
 
 def concatenate_generator(generators, concat=np.vstack):

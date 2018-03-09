@@ -10,7 +10,6 @@ import itertools
 
 
 class IdentityTransform:
-
     def a(self):
         pass
 
@@ -95,8 +94,6 @@ class HistoryPredictor:
                 if not "noreg" in var.name or "Bias" in var.name
             ]
             l2 = sum(l2_vars)
-            l2
-
             self._loss = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=self._y,
