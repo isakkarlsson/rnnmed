@@ -17,13 +17,6 @@ def batch_generator(size, batch_size=32):
         yield slice(i, min(i+batch_size, size))
 
 
-def train_test(x_train, y_train, x_test, y_test, n_timesteps, n_features,
-               n_labels):
-    return "Run of thingi"
-
-
-
-
 class TestHistoryPredict(unittest.TestCase):
 
     def test_time_series_observation(self):
@@ -48,20 +41,21 @@ class TestHistoryPredict(unittest.TestCase):
         print(y_data.shape)
         aucs = []
         skf = StratifiedKFold(n_splits=10, shuffle=True)
+
         for fold, (train, test) in enumerate(skf.split(np.zeros(x_data.shape[1]), y_data)):
             x_train = x_data[:, train, :]
             y_train = y_data[train, :]
             x_test = x_data[:, test, :]
             y_test = y_data[test, :]
-            graph = tf.Graph()
+            graph = tf.graph()
             with graph.as_default():
-                X = tf.placeholder(tf.float32, shape=[n_timesteps, None, n_features])
-                y = tf.placeholder(tf.int32, shape=[None])
+                x = tf.placeholder(tf.float32, shape=[n_timesteps, none, n_features])
+                y = tf.placeholder(tf.int32, shape=[none])
                 drop_prob = tf.placeholder_with_default(1.0, shape=())
-                hp = HistoryPredictor(X, tf.one_hot(y, depth=n_labels), drop_prob)
+                hp = historypredictor(x, tf.one_hot(y, depth=n_labels), drop_prob)
                 init = tf.global_variables_initializer()
 
-            with tf.Session(graph=graph) as sess:
+            with tf.session(graph=graph) as sess:
                 sess.run(init)
                 for epoch in range(1000):
                     for idx in batch_generator(x_train.shape[1], 32):
