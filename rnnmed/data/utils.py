@@ -170,10 +170,25 @@ def collect_batch(generator, batcher=input_output_batch, batch_size=64):
         yield data
 
 
-def concatenate_generator(generators, concat=np.vstack):
-    for gen in zip(*generators):
-        x = [x for x, y in gen]
-        yield concat(x), gen[0][1]
+def make_ndarrays(generator, *args):
+    if len(args) > 1:
+        # the generator generates tuples, e.g. (x, y)
+        arrays = zip(*list(generator))
+        return [f(a) for f, a in zip(args, arrays)]
+    else:
+        return args[0](list(generator))
+
+
+def make_input_output_arrays(generator, x_concat=np.vstack,
+                             y_concat=np.vstack):
+    return make_ndarrays(generator, x_concat, y_concat)
+
+
+def make_time_input_output_arrays(generator, y_concat=np.vstack):
+    return make_input_output_arrays(
+        generator,
+        x_concat=lambda x: np.concatenate(x, axis=1),
+        y_concat=y_concat)
 
 
 def chain_dict(*translators):

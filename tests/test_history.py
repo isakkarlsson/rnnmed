@@ -17,6 +17,13 @@ def batch_generator(size, batch_size=32):
         yield slice(i, min(i+batch_size, size))
 
 
+def train_test(x_train, y_train, x_test, y_test, n_timesteps, n_features,
+               n_labels):
+    return "Run of thingi"
+
+
+
+
 class TestHistoryPredict(unittest.TestCase):
 
     def test_time_series_observation(self):
@@ -33,29 +40,26 @@ class TestHistoryPredict(unittest.TestCase):
         generator = observations.time_observation_generator(
             ob, n_visits=n_timesteps)
 
-        x_data, y_data = zip(*list(generator))
+        x_data, y_data = rnnmed.data.make_time_input_output_arrays(generator)
 
-        x_data = np.concatenate(x_data, axis=1)
-        y_data = np.vstack(y_data)
         print(x_data.shape)
         print(y_data.shape)
         aucs = []
         skf = StratifiedKFold(n_splits=10, shuffle=True)
-
         for fold, (train, test) in enumerate(skf.split(np.zeros(x_data.shape[1]), y_data)):
             x_train = x_data[:, train, :]
             y_train = y_data[train, :]
             x_test = x_data[:, test, :]
             y_test = y_data[test, :]
-            graph = tf.graph()
+            graph = tf.Graph()
             with graph.as_default():
-                x = tf.placeholder(tf.float32, shape=[n_timesteps, none, n_features])
-                y = tf.placeholder(tf.int32, shape=[none])
+                X = tf.placeholder(tf.float32, shape=[n_timesteps, None, n_features])
+                y = tf.placeholder(tf.int32, shape=[None])
                 drop_prob = tf.placeholder_with_default(1.0, shape=())
-                hp = historypredictor(x, tf.one_hot(y, depth=n_labels), drop_prob)
+                hp = HistoryPredictor(X, tf.one_hot(y, depth=n_labels), drop_prob)
                 init = tf.global_variables_initializer()
 
-            with tf.session(graph=graph) as sess:
+            with tf.Session(graph=graph) as sess:
                 sess.run(init)
                 for epoch in range(1000):
                     for idx in batch_generator(x_train.shape[1], 32):

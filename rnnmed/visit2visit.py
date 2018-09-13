@@ -2,14 +2,6 @@
 """
 import tensorflow as tf
 
-def auc(a, p):
-    return metrics.roc_auc_score(a.reshape(-1), p.reshape(-1))
-
-
-def compute_stats(y_train, y_in_pred, y_test, y_out_pred):
-    pass
-
-
 class HistoryPredictor:
     def __init__(self,
                  x,
